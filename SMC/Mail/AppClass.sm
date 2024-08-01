@@ -1,0 +1,100 @@
+// -*- tab-width: 4; -*-
+
+%{
+
+%}
+
+%start Map1::Start
+%class AppClass
+%header   AppClass.h
+
+%map Map1
+%%
+// State		Transition				End State		Action(s)
+Start
+{
+				Symbol(smb :char)	[ctxt.isInMail(smb)]
+                                    	Mail  			{addSymbolToBuffer(smb);}
+				EOS						nil				{Acceptable();}
+
+}
+
+Mail
+{
+				Symbol(smb :char)	[ctxt.isInMail(smb)]	
+										Mail			{addSymbolToBuffer(smb);}
+				Symbol(smb :char) [!ctxt.mailNotEnded() && ctxt.isSymbol(smb)]			
+										Name			{clearBuffer();
+														addSymbolToBuffer(smb);
+														}
+				EOS						OK				{Acceptable();}
+}
+
+Name
+{
+				Symbol(smb :char) [ctxt.isSymbol(smb) && ctxt.nameNotEnded()]			
+										Name			{addSymbolToBuffer(smb);}
+				Symbol(smb :char) [ctxt.isAt(smb)]			
+										At				{addAtMap();}				
+				EOS						OK				{Acceptable();}
+}
+
+At
+{
+				Symbol(smb :char) [ctxt.isSymbol(smb)]			
+										FirstOst		{clearBuffer();
+														addSymbolToBuffer(smb);
+														}
+				EOS						OK				{Acceptable();}
+}
+
+FirstOst
+{
+				Symbol(smb :char) [ctxt.isSymbol(smb) && ctxt.firstOstNotEnded()]
+										FirstOst		{addSymbolToBuffer(smb);}
+				Symbol(smb :char) [ctxt.isDot(smb)]
+										Dot				{clearBuffer();}
+				EOS						OK				{Acceptable();}
+}
+Dot
+{
+				Symbol(smb :char) [ctxt.isSymbol(smb)]
+										SecondOst		{}
+				EOS						OK				{Acceptable();}
+}
+
+SecondOst
+{
+				Symbol(smb :char) [ctxt.isSymbol(smb) && ctxt.secondOstNotEnded()]
+										SecondOst		{addSymbolToBuffer(smb);}
+				Symbol(smb :char) [ctxt.isComma(smb)]
+										Comma			{clearBuffer();}
+				EOS						OK				{Acceptable();}
+}
+
+Comma
+{
+				Symbol(smb :char) [ctxt.isSymbol(smb)]
+										Name			{addSymbolToBuffer(smb);}
+				EOS						OK				{Unacceptable();}
+}
+
+Error
+{
+				EOS				nil					{
+													clearMap();
+													Unacceptable();
+													}
+}
+
+Default
+{
+                Symbol(smb :char)   Error           {}
+                EOS				    Error			{}
+				Reset               Start           {}
+}
+
+OK
+{}
+
+%%
